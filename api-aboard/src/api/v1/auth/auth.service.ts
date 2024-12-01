@@ -1,32 +1,52 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express';
+import * as ms from 'ms';
 import { UserDto } from '../users/dto/user.dto';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { TokenPayload } from './token-payload.interface';
 
 @Injectable()
 export class AuthService {
-  private readonly users: UserDto[] = [{ id: 1, username: 'demo' }];
-
   constructor(
-    private jwtService: JwtService,
-    private userService: UsersService,
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string): Promise<UserDto | null> {
-    const user = await this.userService.getUserByUsername(username);
-    return user ?? null;
+  async verifyUser(username: string) {
+    try {
+      const user = await this.usersService.getUser(username);
+      return user;
+    } catch (err) {
+      throw new UnauthorizedException('Credentials are not valid.');
+    }
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.username);
-    if (!user) {
-      throw new HttpException(`User doesn't exist`, HttpStatus.NOT_FOUND);
-    }
+  async login(paylod: LoginDto, response: Response) {
+    const user: UserDto = await this.verifyUser(paylod.username);
 
-    const payload = { username: user.username, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
+    const expires = new Date();
+    expires.setMilliseconds(
+      expires.getMilliseconds() +
+        ms(this.configService.getOrThrow<string>('JWT_EXPIRATION')),
+    );
+
+    const tokenPayload: TokenPayload = {
+      userId: user.id,
+      username: user.username,
     };
+
+    const token = this.jwtService.sign(tokenPayload);
+
+    response.cookie('Authentication', token, {
+      secure: true,
+      httpOnly: true,
+      expires,
+    });
+
+    return { tokenPayload };
   }
 }

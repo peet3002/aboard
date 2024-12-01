@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 const config: Config = {
   content: [
@@ -8,23 +9,27 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Inter", ...fontFamily.sans],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
         green: {
-          500: '#254F3E',
-          300: '#326D57',
-          100: '#DFF1EC',
+          500: '#243831',
+          300: '#2B5F44',
+          100: '#D8E9E4',
         },
-        golden: '#C6A56A',
+        golden: '#C5A365',
         black: '#000000',
         white: '#FFFFFF',
-        text: '#1A1A1A',
+        text: '#191919',
+        textSecondary: '#A0AFBA',
         grey: {
-          100: '#D3D3D3',
-          300: '#A9A9A9',
+          100: '#191919',
+          300: '#191919',
         },
-        success: '#41A047',
+        success: '#49A569',
       },
     },
   },
